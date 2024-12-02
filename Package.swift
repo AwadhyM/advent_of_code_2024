@@ -10,5 +10,11 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .executableTarget(
             name: "day01"),
+		
+		.testTarget(name: "day01Tests",
+					dependencies: ["day01"],
+					path:"Tests",
+					sources: ["Day01Tests.swift"])
     ]
 )
+
