@@ -6,15 +6,22 @@ import PackageDescription
 let package = Package(
     name: "day01",
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        // Targets for day 1
         .executableTarget(
             name: "day01"),
 		
 		.testTarget(name: "day01Tests",
 					dependencies: ["day01"],
 					path:"Tests",
-					sources: ["Day01Tests.swift"])
+					sources: ["Day01Tests.swift"]),
+		// Targets for day 3
+		.executableTarget(
+			name: "day03"),
+		
+		.testTarget(name: "day03Tests",
+					dependencies: ["day03"],
+					path:"Tests",
+					sources: ["Day03Tests.swift"])
     ]
 )
 
