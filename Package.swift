@@ -32,7 +32,15 @@ let package = Package(
 			.testTarget(name: "day04Tests",
 						dependencies: ["day04"],
 						path:"Tests",
-						sources: ["Day04Tests.swift"])
+						sources: ["Day04Tests.swift"]),
+		// Targets for day 5
+			.executableTarget(
+				name: "day05"),
+			
+			.testTarget(name: "day05Tests",
+						dependencies: ["day05"],
+						path:"Tests",
+						sources: ["Day05Tests.swift"]),
     ]
 )
 
