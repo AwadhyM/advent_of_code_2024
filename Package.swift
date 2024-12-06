@@ -41,6 +41,9 @@ let package = Package(
 						dependencies: ["day05"],
 						path:"Tests",
 						sources: ["Day05Tests.swift"]),
+		// Targets for day 6
+			.executableTarget(
+				name: "day06"),
     ]
 )
 
