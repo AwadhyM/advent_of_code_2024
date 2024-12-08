@@ -137,14 +137,6 @@ if let guardPos = findGuardPos(map: grid) {
     print(obstacleAhead(map: grid, guardPos: guardPos, facing: guardDirection))
 }
 
-//	func move(map: [[Character]], guardPos: (Int, Int), facing: direction) {
-//		let (dy, dx) = facing.coordinateChange
-//
-//		let y = guardPos.0 + dy
-//		let x = guardPos.1 + dx
-//		guardPosition = (y, x)
-//	}
-
 struct Coordinate: Hashable {
     let row: Int
     let col: Int
@@ -176,22 +168,30 @@ func traverseMap(map: [[Character]]) -> Set<Coordinate> {
 }
 
 var visited = traverseMap(map: grid)
-// print(visited)
+
 
 func solvePart2(map: [[Character]], visited: Set<Coordinate>) {
     let startPos = visited.first
+	
     var sum = 0
     // For every coordinate in visited
     for coordinate in visited {
         var mapCpy = map
-        if mapCpy[coordinate.row][coordinate.col] == "#" || mapCpy[coordinate.row][coordinate.col] == "^" {
+
+		// Don't place obstacle in start positino
+		if mapCpy[coordinate.row][coordinate.col] == "^" {
             continue
         }
+		// Place obstacle
         mapCpy[coordinate.row][coordinate.col] = "#"
+		
+		// Set the guards position and direction
         var guardPos = findGuardPos(map: mapCpy)!
         var guardDirection = SymbolToDir[mapCpy[guardPos.0][guardPos.1]]!
+		
         var traversed = false
         var newVisited = Set<Coordinate>()
+		var countVisited : [Coordinate:Int] = [:]
         while !traversed {
             if nextMoveOutBounds(map: mapCpy, guardPos: guardPos, facing: guardDirection) {
                 traversed = true
@@ -201,22 +201,32 @@ func solvePart2(map: [[Character]], visited: Set<Coordinate>) {
                 guardDirection = guardDirection.rotate()
             }
 
-            // print(guardDirection)
             let (dy, dx) = guardDirection.coordinateChange
-            mapCpy[guardPos.0][guardPos.1] = "X"
-            if newVisited.contains(Coordinate(row: guardPos.0, col: guardPos.1)) {
-                print("Loop detected")
-                sum += 1
-                break
-            }
-            newVisited.insert(Coordinate(row: guardPos.0, col: guardPos.1))
+			
+//            if newVisited.contains(Coordinate(row: guardPos.0, col: guardPos.1)) {
+//                sum += 1
+//                break
+//            }
+			
+			if var visited = countVisited[Coordinate(row: guardPos.0, col: guardPos.1)] {
+				countVisited[Coordinate(row: guardPos.0, col: guardPos.1)]! += 1
+				if countVisited[Coordinate(row: guardPos.0, col: guardPos.1)]! > 5 {
+					sum += 1
+					break
+				}
+			} else {
+				countVisited[Coordinate(row: guardPos.0, col: guardPos.1)] = 0
+			}
+			
+//            newVisited.insert(Coordinate(row: guardPos.0, col: guardPos.1))
             let y = guardPos.0 + dy
             let x = guardPos.1 + dx
             guardPos = (y, x)
             mapCpy[guardPos.0][guardPos.1] = dirToSymbol[guardDirection]!
         }
     }
-    print(sum + 1)
+    print(sum + 1) // TODO figure out off by one 
+	// TODO clean up solution
 }
 
 solvePart2(map: grid, visited: visited)
