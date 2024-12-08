@@ -38,202 +38,185 @@ for line in text {
 
 grid.removeLast()
 
-/* Breaking Part 1 down into sub problems:
- 1. Store the map in an appropriate data structure, and print the map. [DONE]
- 2. Locate the current position of the guard [Done]
- 2. Track where the guard is facing [Done]
- 2. Calculate if the next move will be out of bounds [Done]
- 3. Calculate if there is an obstacle ahead [Done]
- 4. Move function []
- 6. solve p1 function:
- 	var set[(Int, Int)]
- 	if you are going to go out bounds
- 		set.append(coordinates)
- 		print(set.size)
- 		break function
- 	if obstacleinway()
- 		rotate
- 		continue
- 	move()
- 5. Keep track of coordinates already stepped on
+/* Breaking part 1 into sub problems
+ 1. Store the contents of the grid in a matrix [Done]
+ 2. Find the guard in the grid, and store their coordinates [Done]
+ 3. Store the state of the guard their direction and coordinates [Done]
+ 4. TraverseMapFunction() {
+ 	5. Write a function to see if next move will be out of bounds
+ 		     Break out of loop if so [Done]
+ 	6. Write a function to see if their is an obstacle ahead and if so change direction [Done]
+ 	7. move the guard
+ 	8. 	mark previous spot with an X
+ 	9.  mark new spot with guard
+ 	10. Exit function and return sum
+ }
  */
 
-struct Puzzle {
-    enum direction {
-        case north, east, west, south, invalid
+enum direction {
+    case north,
+         east,
+         south,
+         west
 
-        var coordinateChange: (row: Int, col: Int) {
-            switch self {
-            case .north:
-                return (-1, 0)
-            case .south:
-                return (1, 0)
-            case .east:
-                return (0, 1)
-            case .west:
-                return (0, -1)
-            case .invalid:
-                return (-10, -10) // No idea...
-            }
-        }
-
-        func rotate() -> direction {
-            switch self {
-            case .north:
-                return .east
-            case .south:
-                return .west
-            case .east:
-                return .south
-            case .west:
-                return .north
-            case .invalid:
-                return .invalid // No idea...
-            }
+    var coordinateChange: (row: Int, col: Int) {
+        switch self {
+        case .north:
+            return (-1, 0)
+        case .south:
+            return (1, 0)
+        case .east:
+            return (0, 1)
+        case .west:
+            return (0, -1)
         }
     }
 
-    let map: [[Character]]
-    var guardPosition: (Int, Int) = (0, 0)
-    var guardFacing: direction = .south
-	var pathCoordinates: [(Int, Int)] = []
-
-    init(map: [[Character]]) {
-        self.map = map
-		guardPosition = findGuardPosition(map: map)
-        guardFacing = determineStartDirection()
-    }
-	
-	mutating func traverseMap(map: [[Character]]) -> Int {
-		var traversed = false
-		var mapCpy = map
-		var steps = 0
-		while traversed == false {
-			steps += 1
-			if steps == 8000 {
-				break
-			}
-			if nextMoveOutBounds(map: mapCpy) {
-				print("Out of bounds!")
-				mapCpy[guardPosition.0][guardPosition.1] = "x"
-				self.pathCoordinates.append(guardPosition)
-				traversed = true
-				continue
-			}
-			if !nextMoveClear(map: mapCpy) {
-				guardFacing = guardFacing.rotate()
-			} else {
-				self.pathCoordinates.append(guardPosition)
-				move()
-			}
-		}
-		
-		if traversed {
-			return 0
-		}
-		return 1
-	}
-	
-	mutating func placeObstacles() -> Int {
-		var sum = 0
-		for coordinate in self.pathCoordinates {
-			var mapCpy = self.map
-			self.guardPosition = self.findGuardPosition(map: map)
-			self.guardFacing = direction.north
-			mapCpy[self.guardPosition.0][self.guardPosition.1] = "^"
-			mapCpy[coordinate.0][coordinate.1] = "#"
-//			sum += traverseMap(map: mapCpy)
-			
-			var traversed = false
-			var steps = 0
-			while traversed == false {
-				//print(self.guardPosition)
-				steps += 1
-				if steps == 20000 {
-					break
-				}
-				if nextMoveOutBounds(map: mapCpy) {
-					//print("Out of bounds!")
-					traversed = true
-					continue
-				}
-				if !nextMoveClear(map: mapCpy) {
-					guardFacing = guardFacing.rotate()
-				} else {
-					move()
-				}
-			}
-			if traversed {
-				sum += 0
-			} else {
-				sum += 1
-			}
-		}
-		return sum
-	}
-	
-	mutating func solvePart2() {
-		print(placeObstacles())
-	}
-
-    mutating func solvePart1() {
-		let res = traverseMap(map: self.map)
-		print(res)
-    }
-	
-
-    func determineStartDirection() -> direction {
-        let guardSymbol = map[guardPosition.0][guardPosition.1]
-        switch guardSymbol {
-        case "^":
-            return direction.north
-        case "<":
-            return direction.west
-        case ">":
-            return direction.east
-        case "v":
-            return direction.south
-        default:
-            return direction.invalid
+    func rotate() -> direction {
+        switch self {
+        case .north:
+            return .east
+        case .south:
+            return .west
+        case .east:
+            return .south
+        case .west:
+            return .north
         }
-    }
-
-    func futureCoordinates() -> (Int, Int) {
-        let (dy, dx) = guardFacing.coordinateChange
-
-        let nextY = guardPosition.0 + dy
-        let nextX = guardPosition.1 + dx
-        return (nextY, nextX)
-    }
-
-    mutating func move() {
-        let (y, x) = futureCoordinates()
-        guardPosition = (y, x)
-    }
-
-	func nextMoveOutBounds(map: [[Character]]) -> Bool {
-        let (y, x) = futureCoordinates()
-        return (x < 0 || x > map.count - 1) || (y < 0 || y > map.count - 1)
-    }
-
-    func nextMoveClear(map: [[Character]]) -> Bool {
-        let (y, x) = futureCoordinates()
-        return !(map[y][x] == "#")
-    }
-
-    func findGuardPosition(map: [[Character]]) -> (Int, Int) {
-        let guardSymbol: [Character] = ["v", "<", "^", ">"]
-        for i in 0 ..< map.count {
-            for j in 0 ..< map[i].count {
-                if guardSymbol.contains(map[i][j]) {
-                    return (i, j)
-                }
-            }
-        }
-        return (0, 0)
     }
 }
 
-var puzzle = Puzzle(map: grid)
-puzzle.solvePart1()
-puzzle.solvePart2()
+let dirToSymbol: [direction: Character] = [
+    .east: ">",
+    .west: "<",
+    .north: "^",
+    .south: "v",
+]
+
+let SymbolToDir: [Character: direction] = [
+    ">": direction.east,
+    "<": direction.west,
+    "^": direction.north,
+    "v": direction.south,
+]
+
+// Function finds the location of the guard on the map
+func findGuardPos(map: [[Character]]) -> (Int, Int)? {
+    for row in 0 ..< map.count {
+        for col in 0 ..< map[row].count {
+            let pos = map[row][col]
+            if pos == "^" || pos == "<" || pos == "v" || pos == ">" {
+                return (row, col)
+            }
+        }
+    }
+    return nil
+}
+
+// Function that determines if next step is out of bounds
+func nextMoveOutBounds(map: [[Character]], guardPos: (Int, Int), facing: direction) -> Bool {
+    let (dy, dx) = facing.coordinateChange
+
+    let y = guardPos.0 + dy
+    let x = guardPos.1 + dx
+    return (x < 0 || x > map.count - 1) || (y < 0 || y > map.count - 1)
+}
+
+// Function to check for obstacle ahead and change direction if true
+func obstacleAhead(map: [[Character]], guardPos: (Int, Int), facing: direction) -> Bool {
+    let (dy, dx) = facing.coordinateChange
+
+    let y = guardPos.0 + dy
+    let x = guardPos.1 + dx
+    return map[y][x] == "#"
+}
+
+if let guardPos = findGuardPos(map: grid) {
+    let guardDirection = SymbolToDir[grid[guardPos.0][guardPos.1]]!
+    print(guardDirection)
+    print(obstacleAhead(map: grid, guardPos: guardPos, facing: guardDirection))
+}
+
+//	func move(map: [[Character]], guardPos: (Int, Int), facing: direction) {
+//		let (dy, dx) = facing.coordinateChange
+//
+//		let y = guardPos.0 + dy
+//		let x = guardPos.1 + dx
+//		guardPosition = (y, x)
+//	}
+
+struct Coordinate: Hashable {
+    let row: Int
+    let col: Int
+}
+
+func traverseMap(map: [[Character]]) -> Set<Coordinate> {
+    // Find the guard
+    var guardPos = findGuardPos(map: map)!
+    var mapCpy = map
+    // Set their direction
+    var guardDirection = SymbolToDir[map[guardPos.0][guardPos.1]]!
+    var visited = Set<Coordinate>()
+    while !nextMoveOutBounds(map: map, guardPos: guardPos, facing: guardDirection) {
+        while obstacleAhead(map: map, guardPos: guardPos, facing: guardDirection) {
+            guardDirection = guardDirection.rotate()
+        }
+
+        // print(guardDirection)
+        let (dy, dx) = guardDirection.coordinateChange
+        mapCpy[guardPos.0][guardPos.1] = "X"
+        visited.insert(Coordinate(row: guardPos.0, col: guardPos.1))
+        let y = guardPos.0 + dy
+        let x = guardPos.1 + dx
+        guardPos = (y, x)
+        mapCpy[guardPos.0][guardPos.1] = dirToSymbol[guardDirection]!
+    }
+    print(visited.count + 1)
+    return visited
+}
+
+var visited = traverseMap(map: grid)
+// print(visited)
+
+func solvePart2(map: [[Character]], visited: Set<Coordinate>) {
+    let startPos = visited.first
+    var sum = 0
+    // For every coordinate in visited
+    for coordinate in visited {
+        var mapCpy = map
+        if mapCpy[coordinate.row][coordinate.col] == "#" || mapCpy[coordinate.row][coordinate.col] == "^" {
+            continue
+        }
+        mapCpy[coordinate.row][coordinate.col] = "#"
+        var guardPos = findGuardPos(map: mapCpy)!
+        var guardDirection = SymbolToDir[mapCpy[guardPos.0][guardPos.1]]!
+        var traversed = false
+        var newVisited = Set<Coordinate>()
+        while !traversed {
+            if nextMoveOutBounds(map: mapCpy, guardPos: guardPos, facing: guardDirection) {
+                traversed = true
+                continue
+            }
+            while obstacleAhead(map: mapCpy, guardPos: guardPos, facing: guardDirection) {
+                guardDirection = guardDirection.rotate()
+            }
+
+            // print(guardDirection)
+            let (dy, dx) = guardDirection.coordinateChange
+            mapCpy[guardPos.0][guardPos.1] = "X"
+            if newVisited.contains(Coordinate(row: guardPos.0, col: guardPos.1)) {
+                print("Loop detected")
+                sum += 1
+                break
+            }
+            newVisited.insert(Coordinate(row: guardPos.0, col: guardPos.1))
+            let y = guardPos.0 + dy
+            let x = guardPos.1 + dx
+            guardPos = (y, x)
+            mapCpy[guardPos.0][guardPos.1] = dirToSymbol[guardDirection]!
+        }
+    }
+    print(sum + 1)
+}
+
+solvePart2(map: grid, visited: visited)
