@@ -77,18 +77,14 @@ struct Puzzle {
     }
 
     func isOutOfBounds(coordinate: Coordinate) -> Bool {
-        if coordinate.row > inputGrid.count - 1 || coordinate.row < 0 {
-            return true
-        }
-
-        if coordinate.col > inputGrid.count - 1 || coordinate.col < 0 {
-            return true
-        }
-
-        return false
+        return (coordinate.col > inputGrid.count - 1 || coordinate.col < 0) || (coordinate.row > inputGrid.count - 1 || coordinate.row < 0)
     }
 
-    mutating func solvePart1() {
+    func solvePart1() {
+        print(determineNumberOfAntinodes())
+    }
+
+    func determineNumberOfAntinodes() -> Int {
         var antinodes: Set<Coordinate> = []
         for antenaFreq in antennaLocations.values {
             let coordinatePairs = antenaFreq.combinations(ofCount: 2)
@@ -110,8 +106,8 @@ struct Puzzle {
                     antinodes.insert(antinodeTwo)
                 }
             }
-            print(antinodes.count)
         }
+        return antinodes.count
     }
 
     mutating func solvePart2() {
@@ -119,21 +115,25 @@ struct Puzzle {
         for antenaFreq in antennaLocations.values {
             let coordinatePairs = antenaFreq.combinations(ofCount: 2)
             for coordinatePair in coordinatePairs {
-                print(coordinatePair)
+//                print(coordinatePair)
                 let coordinateOne = coordinatePair[0]
                 let coordinateTwo = coordinatePair[1]
                 let (dy, dx) = calculateDyDx(coordinate1: coordinateOne, coordinate2: coordinateTwo)
 
-                let antinodeOne = Coordinate(row: coordinateOne.row + 2 * dy, col: coordinateOne.col + 2 * dx)
-
-                let antinodeTwo = Coordinate(row: coordinateTwo.row - 2 * dy, col: coordinateTwo.col - 2 * dx)
-
-                if !isOutOfBounds(coordinate: antinodeOne) {
+                var i = 0
+                var antinodeOne = Coordinate(row: coordinateOne.row + i * dy, col: coordinateOne.col + i * dx)
+                while !isOutOfBounds(coordinate: antinodeOne) {
                     antinodes.insert(antinodeOne)
+                    i += 1
+                    antinodeOne = Coordinate(row: coordinateOne.row + i * dy, col: coordinateOne.col + i * dx)
                 }
 
-                if !isOutOfBounds(coordinate: antinodeTwo) {
+                i = 0
+                var antinodeTwo = Coordinate(row: coordinateTwo.row - i * dy, col: coordinateTwo.col - i * dx)
+                while !isOutOfBounds(coordinate: antinodeTwo) {
                     antinodes.insert(antinodeTwo)
+                    i += 1
+                    antinodeTwo = Coordinate(row: coordinateOne.row - i * dy, col: coordinateOne.col - i * dx)
                 }
             }
         }
@@ -143,3 +143,4 @@ struct Puzzle {
 
 var puzzle = Puzzle(inputGrid: grid)
 puzzle.solvePart1()
+puzzle.solvePart2()
