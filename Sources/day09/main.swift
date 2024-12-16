@@ -54,6 +54,57 @@ func convertToFileMap(diskMap: String) -> [String] {
 let fileMap = convertToFileMap(diskMap: text.first!)
 // print(fileMap)
 
+struct Position {
+    var start: Int
+    var end: Int
+}
+
+func recordNumberOfConsecutiveEmptySpace(fileMap: [String], prev _: Int = 0) -> [Int: [Position]] {
+    var emptySpaces: [Int: [Position]] = [:]
+    let fileMapEnumerated = fileMap.enumerated().map { ($0, $1) }
+    var count = 0
+    var start = 0
+    var end = 0
+    for (idx, el) in fileMapEnumerated {
+        // Start of sequence
+        if el == ".", count == 0 {
+            start = idx
+            end = idx
+            emptySpaces[count, default: []].append(Position(start: start, end: end))
+            count += 1
+            continue
+        }
+
+        // Continue sequence
+        if el == ".", count > 0 {
+            count += 1
+            end = idx
+            emptySpaces[count, default: []].append(Position(start: start, end: end))
+            continue
+        }
+
+        // End of sequence
+        if el != ".", count > 0 {
+            end = idx - 1
+            emptySpaces[count, default: []].append(Position(start: start, end: end))
+            start = 0
+            end = 0
+            count = 0
+        }
+    }
+    return emptySpaces
+}
+
+func recordNumberOfConsecutiveFileID(fileMap: [String]) -> [String: Int] {
+    let noDots = fileMap.filter { $0 != "." }
+    let countIds = noDots.map { ($0, 1) }
+    let counts = Dictionary(countIds, uniquingKeysWith: +)
+    return counts
+}
+
+let fileIdCounts = recordNumberOfConsecutiveFileID(fileMap: fileMap)
+let emptySpace = recordNumberOfConsecutiveEmptySpace(fileMap: fileMap)
+
 func swapFileIDWithEmptySpace(fileMap: [String]) -> [String] {
     var fileMapArr = fileMap
     var firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: 0)
@@ -64,6 +115,44 @@ func swapFileIDWithEmptySpace(fileMap: [String]) -> [String] {
         firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: firstDot)
         lastNum = getLastOccurenceNumber(fileMapArr: fileMapArr, prev: lastNum)
         // print(firstDot, lastNum)
+    }
+    return fileMapArr
+}
+
+func reorganiseFilePuzzle2(fileMap: [String], fileIds: [String: Int], prev: Int = 0) -> [String] {
+    // Look through fileMap from left to right
+    var fileMapArr = fileMap
+    var arrangedIds: [String] = []
+    var firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: 0) // Keep track of first dot so we stop
+    for i in stride(from: prev, to: -1, by: -1) {
+        // If we have a dot
+        if fileMapArr[i] == "." {
+            continue
+        }
+        // If we find a number
+        let countOfId = fileIds[fileMapArr[i]]
+        let start = i - countOfId! + 1
+        let end = i
+
+        if arrangedIds.contains(fileMapArr[i]) {
+            continue
+        }
+        firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: firstDot)
+        let emptySpaces = recordNumberOfConsecutiveEmptySpace(fileMap: fileMapArr, prev: firstDot)
+
+        if let space = emptySpaces[countOfId!] {
+            let pos = space[0]
+            if i < pos.start {
+                continue
+            }
+            for j in pos.start ... pos.end {
+                fileMapArr[j] = fileMapArr[i]
+            }
+            for k in start ... end {
+                fileMapArr[k] = "."
+            }
+            arrangedIds.append(fileMapArr[i])
+        }
     }
     return fileMapArr
 }
@@ -92,5 +181,8 @@ func calculateCheckSum(fileMapArr: [String]) -> Int {
     return intToIndex.reduce(0) { accumuate, file in accumuate + (file.0 * file.1) }
 }
 
+let fileMapCount = fileMap.count
+let part2 = reorganiseFilePuzzle2(fileMap: fileMap, fileIds: fileIdCounts, prev: fileMapCount - 1)
 let reorgFiles = swapFileIDWithEmptySpace(fileMap: fileMap)
 print(calculateCheckSum(fileMapArr: reorgFiles))
+print(calculateCheckSum(fileMapArr: part2))
