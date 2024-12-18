@@ -27,162 +27,173 @@ if !fileManager.isReadableFile(atPath: inputFileRelativePath) {
     exit(0)
 }
 
-let file = try String(contentsOfFile: inputFileRelativePath)
-var text: [String] = file.components(separatedBy: "\n")
+let inputFile = try String(contentsOfFile: inputFileRelativePath, encoding:.utf8)
+var text = Array(inputFile)
+text.removeLast()
 
-// print(text.first!)
 
-func convertToFileMap(diskMap: String) -> [String] {
-    var fileMap: [String] = []
-    var id = 0
-    for i in 0 ..< diskMap.count {
-        let element = String(diskMap[diskMap.index(diskMap.startIndex, offsetBy: i)])
-        let elementInt = Int(element) ?? 0
-        var valStr = "."
-        if i.isMultiple(of: 2) {
-            valStr = String(id)
-            id += 1
-        } else {}
-        for _ in 0 ..< elementInt {
-            fileMap.append(valStr)
-        }
-    }
-    return fileMap
+struct Puzzle {
+	let diskMap : [Character] // given format of File Organisation (puzzle input)
+	var blockFormat : [Int] = [] // File format represented using File ID's (and - 1 for empty space)
+	var locationOfBlanks : [(Int)] = [] // Location of blanks denoted by (index)
+	var fileIdsWithCounts : [(Int, Int)] = []
+	var blanksWithCounts: [Int : [Int]] = [:]
+	
+	init(diskMap: [Character]) {
+		self.diskMap = diskMap
+		self.blockFormat = representUsingId()
+		self.locationOfBlanks = setLocationBlanks()
+		self.fileIdsWithCounts = listOfFileIds()
+		self.blanksWithCounts = countOfBlanks()
+	}
+	
+	func solvePart1() {
+		let fileMap = rearrangeBlockFormat()
+		print(calculateCheckSum(fileMap: fileMap))
+	}
+	
+	private mutating func representUsingId() -> [Int] {
+		var blockFormat: [Int] = []
+		var fileId = 0
+		
+		for (idx, disk) in self.diskMap.enumerated() {
+			let size = Int(String(disk))!
+			
+			if idx.isMultiple(of: 2) {
+				blockFormat.append(contentsOf: Array(repeating: fileId, count: size))
+				fileId += 1
+			} else {
+				blockFormat.append(contentsOf: Array(repeating: -1, count: size))
+			}
+		}
+		return blockFormat
+	}
+	
+	private mutating func setLocationBlanks() -> [(Int)] {
+		var locationOfBlanks : [(Int)] = []
+		
+		for (idx, disk) in self.blockFormat.enumerated() {
+			if disk == -1 {
+				locationOfBlanks.append(idx)
+			}
+		}
+		return locationOfBlanks
+	}
+	
+	private func rearrangeBlockFormat() -> [Int] {
+		var blockFormatCpy = self.blockFormat
+		
+		for i in self.locationOfBlanks {
+			
+			while blockFormatCpy.last! == -1 {
+				blockFormatCpy.removeLast()
+			}
+			
+			if blockFormatCpy.count <= i {
+				break
+			}
+			
+			blockFormatCpy[i] = blockFormatCpy.last!
+			blockFormatCpy.removeLast()
+			
+		}
+		return blockFormatCpy
+	}
+	
+	private func calculateCheckSum(fileMap: [Int]) -> Int {
+		return fileMap.enumerated().reduce(0) {(sum, pair) in sum + pair.element * pair.offset}
+	}
+	
+
+	private func listOfFileIds() -> [(Int, Int)] {
+		var fileIds: [(Int, Int)] = []
+
+		var i = 0
+		while i < self.blockFormat.count {
+			let fileId = self.blockFormat[i]
+			
+			if fileId == -1 {
+				i += 1
+			} else {
+				var count = 0
+				while (i + count < self.blockFormat.count && self.blockFormat[i + count] == fileId) {
+					count += 1
+				}
+				fileIds.append((fileId, count))
+				i += count
+			}
+		}
+		print(fileIds)
+		return fileIds
+	}
+	
+	private func countOfBlanks() -> [Int: [Int]] {
+		var countOfBlanks: [Int: [Int]] = [:]
+		
+		var i = 0
+		while i < self.locationOfBlanks.count {
+			let blank = self.locationOfBlanks[i]
+			var count = 1
+			var j = 1
+			while (i + j < self.locationOfBlanks.count && self.locationOfBlanks[i + j] - self.locationOfBlanks[i + j - 1] == 1) {
+				countOfBlanks[count, default: []].append(blank)
+				count += 1
+				j += 1
+			}
+			countOfBlanks[count, default: []].append(blank)
+			i += 1
+			}
+		return countOfBlanks
+	}
+	
+	private func rearrangeBlocks() -> [Int] {
+		var blockFormatCpy = self.blockFormat
+		
+		for i in stride(from: blockFormat.count - 1, to: -1, by: -1) {
+			
+			while blockFormatCpy[i] == -1 {
+				continue
+			}
+			
+			let fileId = blockFormatCpy[i]
+			let size = self.fileIdsWithCounts[fileId]
+			
+			if let blank = self.blanksWithCounts[size.1] {
+				
+			}
+		}
+		
+		return blockFormatCpy
+	}
+	
+	func solvePart2() {
+		print(self.countOfBlanks())
+		self.rearrangeBlocks()
+	}
 }
 
-// print(convertToFileMap(diskMap:"12345"))
-let fileMap = convertToFileMap(diskMap: text.first!)
-// print(fileMap)
+// Array converts it from ArraySlice to Array
+var puzzle = Puzzle(diskMap: Array(text))
+puzzle.solvePart1()
+puzzle.solvePart2()
 
-struct Position {
-    var start: Int
-    var end: Int
-}
-
-func recordNumberOfConsecutiveEmptySpace(fileMap: [String], prev _: Int = 0) -> [Int: [Position]] {
-    var emptySpaces: [Int: [Position]] = [:]
-    let fileMapEnumerated = fileMap.enumerated().map { ($0, $1) }
-    var count = 0
-    var start = 0
-    var end = 0
-    for (idx, el) in fileMapEnumerated {
-        // Start of sequence
-        if el == ".", count == 0 {
-            start = idx
-            end = idx
-            emptySpaces[count, default: []].append(Position(start: start, end: end))
-            count += 1
-            continue
-        }
-
-        // Continue sequence
-        if el == ".", count > 0 {
-            count += 1
-            end = idx
-            emptySpaces[count, default: []].append(Position(start: start, end: end))
-            continue
-        }
-
-        // End of sequence
-        if el != ".", count > 0 {
-            end = idx - 1
-            emptySpaces[count, default: []].append(Position(start: start, end: end))
-            start = 0
-            end = 0
-            count = 0
-        }
-    }
-    return emptySpaces
-}
-
-func recordNumberOfConsecutiveFileID(fileMap: [String]) -> [String: Int] {
-    let noDots = fileMap.filter { $0 != "." }
-    let countIds = noDots.map { ($0, 1) }
-    let counts = Dictionary(countIds, uniquingKeysWith: +)
-    return counts
-}
-
-let fileIdCounts = recordNumberOfConsecutiveFileID(fileMap: fileMap)
-let emptySpace = recordNumberOfConsecutiveEmptySpace(fileMap: fileMap)
-
-func swapFileIDWithEmptySpace(fileMap: [String]) -> [String] {
-    var fileMapArr = fileMap
-    var firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: 0)
-    var lastNum = getLastOccurenceNumber(fileMapArr: fileMapArr, prev: fileMap.count - 1)
-    fileMapArr.swapAt(firstDot, lastNum)
-    while firstDot < lastNum {
-        fileMapArr.swapAt(firstDot, lastNum)
-        firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: firstDot)
-        lastNum = getLastOccurenceNumber(fileMapArr: fileMapArr, prev: lastNum)
-        // print(firstDot, lastNum)
-    }
-    return fileMapArr
-}
-
-func reorganiseFilePuzzle2(fileMap: [String], fileIds: [String: Int], prev: Int = 0) -> [String] {
-    // Look through fileMap from left to right
-    var fileMapArr = fileMap
-    var arrangedIds: [String] = []
-    var firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: 0) // Keep track of first dot so we stop
-    for i in stride(from: prev, to: -1, by: -1) {
-        // If we have a dot
-        if fileMapArr[i] == "." {
-            continue
-        }
-        // If we find a number
-        let countOfId = fileIds[fileMapArr[i]]
-        let start = i - countOfId! + 1
-        let end = i
-
-        if arrangedIds.contains(fileMapArr[i]) {
-            continue
-        }
-        firstDot = getFirstOccurenceDot(fileMapArr: fileMapArr, prev: firstDot)
-        let emptySpaces = recordNumberOfConsecutiveEmptySpace(fileMap: fileMapArr, prev: firstDot)
-
-        if let space = emptySpaces[countOfId!] {
-            let pos = space[0]
-            if i < pos.start {
-                continue
-            }
-            for j in pos.start ... pos.end {
-                fileMapArr[j] = fileMapArr[i]
-            }
-            for k in start ... end {
-                fileMapArr[k] = "."
-            }
-            arrangedIds.append(fileMapArr[i])
-        }
-    }
-    return fileMapArr
-}
-
-func getFirstOccurenceDot(fileMapArr: [String], prev: Int) -> Int {
-    for i in prev ..< fileMapArr.count {
-        if fileMapArr[i] == "." {
-            return i
-        }
-    }
-    return 0
-}
-
-func getLastOccurenceNumber(fileMapArr: [String], prev: Int) -> Int {
-    for i in stride(from: prev, to: -1, by: -1) {
-        if Int(fileMapArr[i]) != nil {
-            return i
-        }
-    }
-    return 0
-}
-
-func calculateCheckSum(fileMapArr: [String]) -> Int {
-    let intArray = fileMapArr.map { Int($0) ?? 0 }
-    let intToIndex = intArray.enumerated().map { ($0, $1) }
-    return intToIndex.reduce(0) { accumuate, file in accumuate + (file.0 * file.1) }
-}
-
-let fileMapCount = fileMap.count
-let part2 = reorganiseFilePuzzle2(fileMap: fileMap, fileIds: fileIdCounts, prev: fileMapCount - 1)
-let reorgFiles = swapFileIDWithEmptySpace(fileMap: fileMap)
-print(calculateCheckSum(fileMapArr: reorgFiles))
-print(calculateCheckSum(fileMapArr: part2))
+/* Pseudocode for part 2:
+	1. Dictionary containing size of blank mapped to starting indexes of those blanks
+ 
+	2. Walk through blockFormat from right to left
+ 
+		while blockFormat[i] == -1 {
+			blockFormat.removeLast()
+		}
+ 
+		let fileId = blockFormat[i]
+		var count = 1
+		var j = i
+		while (blockFormat[i - j] == fileId) {
+			count += 1
+			j += 1
+		}
+ 
+		print(blockFormat[i] shows up count number of times!)
+ 
+ */
