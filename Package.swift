@@ -61,6 +61,10 @@ let package = Package(
 			name: "day09"),
 		// Targets for day 10
 		.executableTarget(
-			name: "day10")
+			name: "day10"),
+		.executableTarget(name: "day11"),
+		// Targets for day 22
+		.executableTarget(
+			name: "day22"),
     ]
 )
